@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Tournaments{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>🏆 Tournaments</h1>
+  <p class="muted">A tournament is a set of matches (sessions) of one game that share the same tournament name.</p></div>
+  {% if me.role in ('host', 'admin') %}<a class="btn" href="{{ url_for('new_session') }}">+ New match</a>{% endif %}
+</div>
+<section class="cards">
+  {% for t in rows %}
+  <a class="card game link-card" href="{{ url_for('tournament', game_id=t.game_id, name=t.tournament_name) }}">
+    <div class="game-top"><span class="game-icon">{{ t.icon }}</span>
+      <div><h3>{{ t.tournament_name }}</h3><span class="muted">{{ t.game_name }}</span></div></div>
+    <p class="small">{{ t.matches }} match{{ '' if t.matches == 1 else 'es' }} · {{ t.finished }} finished · {{ t.players }} players</p>
+    {% if t.finished == t.matches %}<span class="badge finished">complete</span>{% else %}<span class="badge ongoing">in progress</span>{% endif %}
+  </a>
+  {% else %}
+  <p class="empty">No tournaments yet. Create a session and choose the Tournament mode.</p>
+  {% endfor %}
+</section>
+{% endblock %}

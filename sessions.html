@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sessions_table %}
+{% block title %}Sessions{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Sessions</h1>
+  {% if me.role in ('host', 'admin') %}<a class="btn" href="{{ url_for('new_session') }}">+ New session</a>{% endif %}
+</div>
+<form method="get" class="filters card">
+  <label>Search <input name="q" value="{{ q }}" placeholder="Session title"></label>
+  <label>Game
+    <select name="game"><option value="">All games</option>
+      {% for g in games %}<option value="{{ g.game_id }}" {{ 'selected' if game == g.game_id | string }}>{{ g.name }}</option>{% endfor %}
+    </select></label>
+  <label>Status
+    <select name="status"><option value="">Any</option>
+      {% for st in ['open', 'ongoing', 'finished'] %}<option value="{{ st }}" {{ 'selected' if status == st }}>{{ st | capitalize }}</option>{% endfor %}
+    </select></label>
+  <label>Mode
+    <select name="mode"><option value="">Any</option>
+      <option value="casual" {{ 'selected' if mode == 'casual' }}>Casual</option>
+      <option value="tournament" {{ 'selected' if mode == 'tournament' }}>Tournament</option>
+    </select></label>
+  <button class="btn">Filter</button>
+  <a class="btn ghost" href="{{ url_for('sessions_page') }}">Clear</a>
+</form>
+<p class="muted">{{ rows | length }} session{{ '' if rows | length == 1 else 's' }}</p>
+{{ sessions_table(rows) }}
+{% endblock %}

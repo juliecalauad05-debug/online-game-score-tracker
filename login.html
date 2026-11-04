@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf with context %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+<form method="post" class="card auth">
+  {{ csrf() }}
+  <h1>Welcome back</h1>
+  <p class="muted">Log in to track your game scores.</p>
+  <label>Username <input name="username" required autofocus></label>
+  <label>Password <input name="password" type="password" required></label>
+  <button class="btn block">Log in</button>
+  <p class="muted center">No account yet? <a href="{{ url_for('register') }}">Register</a></p>
+</form>
+{% endblock %}

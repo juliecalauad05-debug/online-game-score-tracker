@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf with context %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>User management</h1>
+  <p class="muted">Hosts can create sessions and enter scores. Admins can also manage games and users. Changes apply immediately.</p></div></div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Username</th><th>Email</th><th>Joined</th><th>Role</th></tr></thead>
+  <tbody>
+  {% for u in rows %}
+  <tr>
+    <td><a href="{{ url_for('player', uid=u.user_id) }}">{{ u.username }}</a></td>
+    <td>{{ u.email }}</td>
+    <td>{{ u.created_at | fmt_dt }}</td>
+    <td>
+      {% if u.user_id == me.user_id %}<span class="badge">{{ u.role }} (you)</span>
+      {% else %}
+      <form method="post" action="{{ url_for('set_role', uid=u.user_id) }}" class="inline-form">
+        {{ csrf() }}
+        <select name="role">{% for r in roles %}<option value="{{ r }}" {{ 'selected' if u.role == r }}>{{ r }}</option>{% endfor %}</select>
+        <button class="btn small">Save</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

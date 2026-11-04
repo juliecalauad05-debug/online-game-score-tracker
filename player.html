@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "_macros.html" import medal, bar %}
+{% block title %}{{ u.username }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="profile-head">
+    <span class="avatar">{{ u.username[0] | upper }}</span>
+    <div><h1>{{ u.username }} <span class="badge">{{ u.role }}</span></h1>
+      <p class="muted">Joined {{ u.created_at | fmt_dt }}</p></div>
+  </div>
+</div>
+
+<section class="tiles">
+  <div class="tile"><span class="tile-n">{{ summary.sessions_played }}</span><span class="tile-l">Sessions finished</span></div>
+  <div class="tile accent"><span class="tile-n">{{ summary.session_wins }}</span><span class="tile-l">Sessions won</span></div>
+  <div class="tile"><span class="tile-n">{{ summary.rounds_played }}</span><span class="tile-l">Rounds played</span></div>
+  <div class="tile"><span class="tile-n">{{ summary.wins }}</span><span class="tile-l">Round wins</span></div>
+  <div class="tile"><span class="tile-n">{{ summary.win_rate }}%</span><span class="tile-l">Win rate</span></div>
+</section>
+
+<h2>By game</h2>
+{% if per_game %}
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Game</th><th class="num">Sessions</th><th class="num">Rounds</th><th>Round wins</th><th class="num">Win rate</th><th class="num">Total points</th></tr></thead>
+  <tbody>
+  {% for g in per_game %}
+  <tr>
+    <td><a href="{{ url_for('leaderboard', game=g.game_id) }}">{{ g.icon }} {{ g.name }}</a></td>
+    <td class="num">{{ g.sessions }}</td><td class="num">{{ g.rounds_played }}</td>
+    <td class="wide-cell"><strong>{{ g.wins }}</strong>{{ bar(g.wins, per_game[0].wins) }}</td>
+    <td class="num">{{ g.win_rate }}%</td><td class="num">{{ g.total_points }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}<p class="empty">No scores recorded for this player yet.</p>{% endif %}
+
+<h2>Recent finished sessions</h2>
+{% if recent %}
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Session</th><th>Game</th><th class="num">Rank</th><th class="num">Points</th><th>Result</th></tr></thead>
+  <tbody>
+  {% for r in recent %}
+  <tr>
+    <td><a href="{{ url_for('view_session', sid=r.session_id) }}">{{ r.title }}</a></td>
+    <td>{{ r.icon }} {{ r.game_name }}</td>
+    <td class="num">{{ medal(r.rank_no) }}</td><td class="num">{{ r.total_points }}</td>
+    <td>{% if r.is_winner %}<span class="badge finished">winner</span>{% else %}<span class="muted">–</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}<p class="empty">No finished sessions yet.</p>{% endif %}
+{% endblock %}

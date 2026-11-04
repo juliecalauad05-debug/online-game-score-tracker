@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, game_fields with context %}
+{% block title %}Games{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Game catalog</h1><p class="muted">Every game has its own timer, player limits and win rule.</p></div>
+</div>
+<section class="cards">
+  {% for g in games %}
+  <article class="card game">
+    <div class="game-top"><span class="game-icon">{{ g.icon }}</span>
+      <div><h3>{{ g.name }}</h3>
+        <span class="badge">{{ g.category }}</span>
+        <span class="badge">{{ 'lowest wins' if g.win_rule == 'lowest' else 'highest wins' }}</span></div></div>
+    <p class="muted">{{ g.description }}</p>
+    <p class="small">👥 {{ g.min_players }}{% if g.max_players != g.min_players %}-{{ g.max_players }}{% endif %} players · ⏱ {{ g.default_timer_seconds | mmss }} · {{ g.sessions }} session{{ '' if g.sessions == 1 else 's' }}</p>
+    <div class="actions">
+      {% if me.role in ('host', 'admin') %}<a class="btn small" href="{{ url_for('new_session', game=g.game_id) }}">Start session</a>{% endif %}
+      <a class="btn small ghost" href="{{ url_for('leaderboard', game=g.game_id) }}">Leaderboard</a>
+      {% if me.role == 'admin' %}<a class="btn small ghost" href="{{ url_for('edit_game', game_id=g.game_id) }}">Edit</a>{% endif %}
+    </div>
+  </article>
+  {% else %}
+  <p class="empty">No games yet. Run <code>python init_db.py</code> to add the game catalog.</p>
+  {% endfor %}
+</section>
+
+{% if me.role == 'admin' %}
+<details class="card edit-details">
+  <summary><strong>+ Add a new game</strong></summary>
+  <form method="post" action="{{ url_for('add_game') }}">
+    {{ csrf() }}
+    {{ game_fields(none) }}
+    <button class="btn">Add game</button>
+  </form>
+</details>
+{% endif %}
+{% endblock %}

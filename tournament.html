@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "_macros.html" import medal, bar, status_badge %}
+{% block title %}{{ name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>🏆 {{ name }}</h1>
+  <p class="muted">{{ game.icon }} {{ game.name }} · {{ 'lowest' if game.win_rule == 'lowest' else 'highest' }} total score wins</p></div>
+  {% if me.role in ('host', 'admin') %}<a class="btn" href="{{ url_for('new_session', game=game.game_id) }}">+ New match</a>{% endif %}
+</div>
+
+{% if all_done and champions %}
+<div class="banner">🏆 Champion{{ 's' if champions | length > 1 }}:
+  <strong>{% for c in champions %}{{ c.username }}{{ ', ' if not loop.last }}{% endfor %}</strong>
+  with {{ champions[0].total_points }} points across the tournament.</div>
+{% elif not all_done %}
+<div class="banner info">Tournament in progress. The champion is shown when every match is finished.</div>
+{% endif %}
+
+<div class="split">
+  <section class="card">
+    <h2>Standings <small class="muted">Total = SUM of all tournament rounds</small></h2>
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>Rank</th><th>Player</th><th class="num">Rounds</th><th class="num">Wins</th><th class="num">Total points</th></tr></thead>
+      <tbody>
+      {% for r in standings %}
+      <tr class="{{ 'first' if r.rank == 1 and all_done }}">
+        <td>{{ medal(r.rank) }}</td>
+        <td><a href="{{ url_for('player', uid=r.user_id) }}">{{ r.username }}</a></td>
+        <td class="num">{{ r.rounds_played }}</td><td class="num">{{ r.wins }}</td>
+        <td class="num"><strong>{{ r.total_points }}</strong>{{ bar(r.total_points, max_points) }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+  <aside class="card">
+    <h2>Matches</h2>
+    {% for stage, items in stages.items() %}
+    <h4>{{ stage }}</h4>
+    {% for m in items %}
+    <a class="row-link" href="{{ url_for('view_session', sid=m.session_id) }}">
+      <span><strong>{{ m.title }}</strong>{% if m.winners %}<br><small class="muted">Winner: {{ m.winners | join(', ') }}</small>{% endif %}</span>
+      {{ status_badge(m.status) }}
+    </a>
+    {% endfor %}
+    {% endfor %}
+  </aside>
+</div>
+{% endblock %}

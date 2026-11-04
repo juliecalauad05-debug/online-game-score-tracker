@@ -1,0 +1,71 @@
+Claude
+
+
+
+
+
+
+
+
+
+
+
+
+
+macros · HTML
+{# Shared pieces. Import with:  {% from "_macros.html" import csrf with context %} #}
+ 
+{% macro csrf() %}<input type="hidden" name="_csrf" value="{{ csrf_token }}">{% endmacro %}
+ 
+{% macro status_badge(s) %}<span class="badge {{ s }}">{{ s }}</span>{% endmacro %}
+ 
+{% macro medal(rank) %}{% if rank == 1 %}🥇{% elif rank == 2 %}🥈{% elif rank == 3 %}🥉{% elif rank %}{{ rank }}{% else %}–{% endif %}{% endmacro %}
+ 
+{# A thin progress bar. A <progress> element needs no style="" attribute, so editors do not complain. #}
+{% macro bar(value, maximum) %}<progress class="bar" value="{{ value if (maximum and maximum > 0 and value > 0) else 0 }}" max="{{ maximum if (maximum and maximum > 0) else 1 }}"></progress>{% endmacro %}
+ 
+{% macro sessions_table(rows) %}
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Session</th><th>Game</th><th>Mode</th><th>Host</th><th>Players</th><th>Games played</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for s in rows %}
+  <tr>
+    <td><a href="{{ url_for('view_session', sid=s.session_id) }}"><strong>{{ s.title }}</strong></a></td>
+    <td>{{ s.icon }} {{ s.game_name }}</td>
+    <td>{% if s.mode == 'tournament' %}🏆 {{ s.tournament_name }}{% if s.tournament_stage %} <span class="muted">· {{ s.tournament_stage }}</span>{% endif %}{% else %}<span class="muted">Casual</span>{% endif %}</td>
+    <td>{{ s.host_name }}</td>
+    <td>{{ s.players }}</td>
+    <td>{{ s.games_played }}</td>
+    <td>{{ status_badge(s.status) }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="7" class="empty">No sessions found.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endmacro %}
+ 
+{# Fields shared by the "add game" and "edit game" forms. `game` may be none. #}
+{% macro game_fields(game) %}
+<div class="form-grid">
+  <label>Name <input name="name" required maxlength="60" value="{{ game.name if game else '' }}"></label>
+  <label>Icon (emoji) <input name="icon" maxlength="8" value="{{ game.icon if game else '🎲' }}"></label>
+  <label>Category
+    <select name="category">
+      {% for c in ['card', 'board', 'sport'] %}<option value="{{ c }}" {{ 'selected' if game and game.category == c }}>{{ c | capitalize }}</option>{% endfor %}
+    </select></label>
+  <label>Who wins?
+    <select name="win_rule">
+      <option value="highest" {{ 'selected' if game and game.win_rule == 'highest' }}>Highest total score</option>
+      <option value="lowest" {{ 'selected' if game and game.win_rule == 'lowest' }}>Lowest total score</option>
+    </select></label>
+  <label>Timer (seconds) <input name="default_timer_seconds" type="number" min="10" max="86400" required value="{{ game.default_timer_seconds if game else 300 }}"></label>
+  <label>Min players <input name="min_players" type="number" min="1" max="50" required value="{{ game.min_players if game else 2 }}"></label>
+  <label>Max players <input name="max_players" type="number" min="1" max="50" required value="{{ game.max_players if game else 6 }}"></label>
+  <label class="wide">Description <input name="description" maxlength="255" value="{{ game.description if game else '' }}"></label>
+</div>
+{% endmacro %}
+ 
+Claude finished the response

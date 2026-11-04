@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Players{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Players</h1></div>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Player</th><th>Role</th><th class="num">Sessions</th><th class="num">Sessions won</th><th class="num">Rounds</th><th class="num">Round wins</th><th>Joined</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr>
+    <td><a href="{{ url_for('player', uid=r.user_id) }}"><strong>{{ r.username }}</strong></a></td>
+    <td><span class="badge">{{ r.role }}</span></td>
+    <td class="num">{{ r.sessions_played }}</td><td class="num">{{ r.session_wins }}</td>
+    <td class="num">{{ r.rounds_played }}</td><td class="num">{{ r.wins }}</td>
+    <td>{{ r.created_at | fmt_dt }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

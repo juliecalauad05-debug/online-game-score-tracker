@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "_macros.html" import medal, bar %}
+{% block title %}Leaderboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>🏅 All-time leaderboard{% if chosen %}: {{ chosen.icon }} {{ chosen.name }}{% endif %}</h1>
+    <p class="muted">Ranked by round wins, then sessions won. Point totals are not compared across different games.</p>
+  </div>
+  <form method="get" class="inline-form">
+    <select name="game" onchange="this.form.submit()">
+      <option value="">All games</option>
+      {% for g in games %}<option value="{{ g.game_id }}" {{ 'selected' if chosen and chosen.game_id == g.game_id }}>{{ g.icon }} {{ g.name }}</option>{% endfor %}
+    </select>
+    <noscript><button class="btn small">Show</button></noscript>
+  </form>
+</div>
+
+{% if rows %}
+<section class="podium">
+  {% for r in rows[:3] %}
+  <div class="podium-card p{{ loop.index }}">
+    <span class="podium-medal">{{ medal(r.rank) }}</span>
+    <a href="{{ url_for('player', uid=r.user_id) }}"><strong>{{ r.username }}</strong></a>
+    <span>{{ r.wins }} round wins</span>
+  </div>
+  {% endfor %}
+</section>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Rank</th><th>Player</th><th>Round wins</th><th class="num">Rounds</th><th class="num">Win rate</th><th class="num">Sessions</th><th class="num">Sessions won</th><th class="num">Total points</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr>
+    <td>{{ medal(r.rank) }}</td>
+    <td><a href="{{ url_for('player', uid=r.user_id) }}">{{ r.username }}</a></td>
+    <td class="wide-cell"><strong>{{ r.wins }}</strong>{{ bar(r.wins, top_wins) }}</td>
+    <td class="num">{{ r.rounds_played }}</td>
+    <td class="num">{{ ((100 * r.wins / r.rounds_played) | round | int) if r.rounds_played else 0 }}%</td>
+    <td class="num">{{ r.sessions_played }}</td>
+    <td class="num">{{ r.session_wins }}</td>
+    <td class="num">{{ r.total_points }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="empty">No scores recorded yet.</p>
+{% endif %}
+{% endblock %}

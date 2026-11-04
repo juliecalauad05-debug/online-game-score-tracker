@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, status_badge, medal, bar with context %}
+{% block title %}{{ s.title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{{ s.icon }} {{ s.title }} {{ status_badge(s.status) }}</h1>
+    <p class="muted">
+      {{ s.game_name }} · hosted by {{ s.host_name }} · created {{ s.created_at | fmt_dt }}
+      {% if s.mode == 'tournament' %} · 🏆 <a href="{{ url_for('tournament', game_id=s.game_id, name=s.tournament_name) }}">{{ s.tournament_name }}</a>{% if s.tournament_stage %} ({{ s.tournament_stage }}){% endif %}{% endif %}
+    </p>
+  </div>
+  <div class="actions">
+    {% if not member and s.status != 'finished' %}
+    <form method="post" action="{{ url_for('join_session', sid=s.session_id) }}">{{ csrf() }}<button class="btn" {{ 'disabled' if full }}>Join session</button></form>
+    {% endif %}
+    <a class="btn ghost" href="{{ url_for('export_session', sid=s.session_id) }}">⬇ CSV</a>
+    {% if manager %}
+      {% if s.status != 'finished' %}
+      <form method="post" action="{{ url_for('finish_session', sid=s.session_id) }}" onsubmit="return confirm('Finish the session and save the final results?')">{{ csrf() }}<button class="btn success">✔ Finish session</button></form>
+      {% else %}
+      <form method="post" action="{{ url_for('reopen_session', sid=s.session_id) }}">{{ csrf() }}<button class="btn ghost">Reopen</button></form>
+      {% endif %}
+      <form method="post" action="{{ url_for('delete_session', sid=s.session_id) }}" onsubmit="return confirm('Delete this session and all its scores? This cannot be undone.')">{{ csrf() }}<button class="btn danger ghost">Delete</button></form>
+    {% endif %}
+  </div>
+</div>
+
+{% set champs = board | selectattr('rank', 'equalto', 1) | list %}
+{% if s.status == 'finished' and champs %}
+<div class="banner">
+  🏆 <strong>{{ champs | map(attribute='username') | join(', ') }}</strong>
+  won with {{ champs[0].total_points }} points.
+  Finished {{ s.finished_at | fmt_dt }}.
+</div>
+{% endif %}
+
+<section class="tiles small">
+  <div class="tile"><span class="tile-n">{{ players | length }}<small>/{{ s.max_players }}</small></span><span class="tile-l">Players{% if players | length < s.min_players %} (needs {{ s.min_players }}+){% endif %}</span></div>
+  <div class="tile"><span class="tile-n">{{ rounds | length }}</span><span class="tile-l">Games played</span></div>
+  <div class="tile"><span class="tile-n">{{ 'Lowest' if s.win_rule == 'lowest' else 'Highest' }}</span><span class="tile-l">Total score wins</span></div>
+  <div class="tile"><span class="tile-n">{{ s.default_timer_seconds | mmss }}</span><span class="tile-l">Default timer</span></div>
+</section>
+
+<div class="split">
+  <section class="card">
+    <h2>Scoreboard <small class="muted">Total = SUM of all rounds</small></h2>
+    <div class="table-wrap">
+    <table class="scoreboard">
+      <thead><tr><th>Rank</th><th>Player</th>
+        {% for r in rounds %}<th class="num">R{{ r.round_no }}</th>{% endfor %}
+        <th class="num">Total</th><th class="num">Wins</th></tr></thead>
+      <tbody>
+      {% for row in board %}
+      <tr class="{{ 'first' if row.rank == 1 and s.status == 'finished' }}">
+        <td>{{ medal(row.rank) }}</td>
+        <td><a href="{{ url_for('player', uid=row.user_id) }}">{{ row.username }}</a></td>
+        {% for r in rounds %}
+          {% set pts = grid.get((r.round_id, row.user_id)) %}
+          <td class="num {{ 'win' if pts is not none and row.user_id in winners[r.round_id] }}">{{ pts if pts is not none else '–' }}</td>
+        {% endfor %}
+        <td class="num"><strong>{{ row.total_points }}</strong>{{ bar(row.total_points, max_points) }}</td>
+        <td class="num">{{ row.wins }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <p class="muted small">Green cells are the best score of each round. A round win goes to the {{ 'lowest' if s.win_rule == 'lowest' else 'highest' }} score.</p>
+  </section>
+
+  <aside class="card">
+    <h2>Players</h2>
+    <ul class="plain">
+      {% for p in players %}
+      <li>
+        <a href="{{ url_for('player', uid=p.user_id) }}">{{ p.username }}</a>
+        {% if p.user_id == s.host_id %}<span class="badge">host</span>{% endif %}
+        {% if s.status != 'finished' and (manager or me.user_id == p.user_id) %}
+        <form method="post" action="{{ url_for('remove_player', sid=s.session_id, uid=p.user_id) }}" class="inline" onsubmit="return confirm('Remove {{ p.username }} from this session?')">{{ csrf() }}<button class="link-btn">{{ 'leave' if me.user_id == p.user_id else 'remove' }}</button></form>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% if editable %}
+    <form method="post" action="{{ url_for('add_player', sid=s.session_id) }}" class="inline-form">
+      {{ csrf() }}
+      <input name="username" placeholder="Add player by username" required>
+      <button class="btn small" {{ 'disabled' if full }}>Add</button>
+    </form>
+    {% if full %}<p class="muted small">This game allows {{ s.max_players }} players at most.</p>{% endif %}
+    {% endif %}
+    {% if manager %}
+    <details class="edit-details">
+      <summary>Edit session details</summary>
+      <form method="post" action="{{ url_for('edit_session', sid=s.session_id) }}">
+        {{ csrf() }}
+        <label>Title <input name="title" value="{{ s.title }}" required maxlength="100"></label>
+        {% if s.mode == 'tournament' %}<label>Tournament stage <input name="tournament_stage" value="{{ s.tournament_stage or '' }}" maxlength="40"></label>{% endif %}
+        <button class="btn small">Save</button>
+      </form>
+    </details>
+    {% endif %}
+  </aside>
+</div>
+
+<h2>Rounds and timers</h2>
+{% for r in rounds %}
+{% set t = timers[r.round_id] %}
+<form method="post" action="{{ url_for('save_scores', rid=r.round_id) }}" class="card round">
+  {{ csrf() }}
+  <div class="round-head">
+    <h3>Round {{ r.round_no }}</h3>
+    <span class="timer {{ t.state }}" data-id="{{ r.round_id }}" data-state="{{ t.state }}" data-remaining="{{ t.remaining }}">{{ t.remaining | mmss }}</span>
+    <span class="muted small">limit {{ t.limit | mmss }}</span>
+    {% if editable %}
+    <span class="timer-btns">
+      <button class="btn small" formaction="{{ url_for('round_timer', rid=r.round_id, action='start') }}" formnovalidate {{ 'disabled' if t.state != 'idle' }}>▶ Start</button>
+      <button class="btn small ghost" formaction="{{ url_for('round_timer', rid=r.round_id, action='stop') }}" formnovalidate {{ 'disabled' if t.state not in ('running',) }}>⏹ Stop</button>
+      <button class="btn small ghost" formaction="{{ url_for('round_timer', rid=r.round_id, action='reset') }}" formnovalidate {{ 'disabled' if t.state == 'idle' }}>↺ Reset</button>
+    </span>
+    {% endif %}
+  </div>
+  <div class="score-row">
+    {% for p in players %}
+    {% set pts = grid.get((r.round_id, p.user_id)) %}
+    <label>{{ p.username }}
+      {% if editable %}<input type="number" name="points_{{ p.user_id }}" value="{{ pts if pts is not none else '' }}" min="-100000" max="100000">
+      {% else %}<span class="pts {{ 'win' if pts is not none and p.user_id in winners[r.round_id] }}">{{ pts if pts is not none else '–' }}</span>{% endif %}
+    </label>
+    {% endfor %}
+  </div>
+  {% if editable %}<button class="btn small">Save scores</button>{% endif %}
+</form>
+{% else %}
+<p class="empty">No rounds yet.{% if editable %} Add the first round below.{% endif %}</p>
+{% endfor %}
+
+{% if editable %}
+<div class="card add-round">
+  <form method="post" action="{{ url_for('add_round', sid=s.session_id) }}" class="inline-form">
+    {{ csrf() }}
+    <label>Timer for the new round (seconds)
+      <input type="number" name="time_limit" min="10" max="86400" value="{{ s.default_timer_seconds }}"></label>
+    <button class="btn">+ Add round</button>
+  </form>
+  {% if rounds %}
+  <form method="post" action="{{ url_for('delete_last_round', sid=s.session_id) }}" onsubmit="return confirm('Delete the last round and its scores?')">
+    {{ csrf() }}<button class="btn ghost danger">Delete last round</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+
+{% raw %}
+<script>
+// Countdown runs in the browser; the real time comes from the server every 10 seconds,
+// so everyone watching the session sees the same timer.
+(function () {
+  function fmt(t) {
+    t = Math.max(0, t | 0);
+    var h = (t / 3600) | 0, m = ((t % 3600) / 60) | 0, s = t % 60;
+    var mm = String(m).padStart(2, '0'), ss = String(s).padStart(2, '0');
+    return h ? h + ':' + mm + ':' + ss : mm + ':' + ss;
+  }
+  function beep() {
+    try {
+      var c = new (window.AudioContext || window.webkitAudioContext)();
+      var o = c.createOscillator(); o.connect(c.destination); o.frequency.value = 880; o.start();
+      setTimeout(function () { o.stop(); c.close(); }, 700);
+    } catch (e) {}
+  }
+  document.querySelectorAll('.timer').forEach(function (el) {
+    var state = el.dataset.state, remaining = +el.dataset.remaining, beeped = state === 'finished';
+    function paint() { el.textContent = fmt(remaining); el.className = 'timer ' + state; }
+    function sync() {
+      fetch('/rounds/' + el.dataset.id + '/timer/status', { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { state = d.state; remaining = d.remaining; paint(); })
+        .catch(function () {});
+    }
+    setInterval(function () {
+      if (state === 'running') {
+        remaining = Math.max(0, remaining - 1);
+        if (remaining === 0) { state = 'finished'; if (!beeped) { beeped = true; beep(); } }
+        paint();
+      }
+    }, 1000);
+    setInterval(sync, 10000);
+    paint();
+  });
+})();
+</script>
+{% endraw %}
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf with context %}
+{% block title %}New session{% endblock %}
+{% block content %}
+<div class="page-head"><h1>New session</h1></div>
+<form method="post" class="card narrow-form">
+  {{ csrf() }}
+  <label>Session title <input name="title" required maxlength="100" placeholder="e.g. Friday Night UNO"></label>
+  <label>Game
+    <select name="game_id" id="game">
+      {% for g in games %}
+      <option value="{{ g.game_id }}" data-timer="{{ g.default_timer_seconds }}" data-min="{{ g.min_players }}" data-max="{{ g.max_players }}" data-rule="{{ g.win_rule }}" {{ 'selected' if preselect == g.game_id | string }}>{{ g.icon }} {{ g.name }}</option>
+      {% endfor %}
+    </select>
+    <small class="muted" id="game-hint"></small>
+  </label>
+  <label>Mode
+    <select name="mode" id="mode">
+      <option value="casual">Casual game</option>
+      <option value="tournament">Tournament match</option>
+    </select></label>
+  <div id="tournament-fields" hidden>
+    <label>Tournament name
+      <input name="tournament_name" list="tournament-names" maxlength="100" placeholder="e.g. Section Cup 2026">
+      <datalist id="tournament-names">{% for n in names %}<option value="{{ n.tournament_name }}">{% endfor %}</datalist>
+      <small class="muted">Use the same name for every match of the same tournament and game.</small></label>
+    <label>Stage <input name="tournament_stage" maxlength="40" placeholder="Group Stage, Semi-final, Final"></label>
+  </div>
+  <button class="btn">Create session</button>
+</form>
+{% raw %}
+<script>
+  var game = document.getElementById('game'), hint = document.getElementById('game-hint');
+  var mode = document.getElementById('mode'), box = document.getElementById('tournament-fields');
+  function showHint() {
+    var o = game.options[game.selectedIndex]; if (!o) return;
+    var secs = +o.dataset.timer, m = Math.floor(secs / 60), s = secs % 60;
+    hint.textContent = o.dataset.min + '-' + o.dataset.max + ' players · timer ' + m + ':' + String(s).padStart(2, '0') +
+      ' · ' + (o.dataset.rule === 'lowest' ? 'lowest' : 'highest') + ' total wins';
+  }
+  game.addEventListener('change', showHint); showHint();
+  mode.addEventListener('change', function () { box.hidden = mode.value !== 'tournament'; });
+</script>
+{% endraw %}
+{% endblock %}

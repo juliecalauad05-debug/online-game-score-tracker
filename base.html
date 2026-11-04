@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Score Tracker{% endblock %} · Score Tracker</title>
+  <script>
+    /* apply the saved theme before the page paints (no flash) */
+    try { var t = localStorage.getItem('theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+{% set ep = request.endpoint or '' %}
+<header class="topbar">
+  <a class="brand" href="{{ url_for('index') }}"><span class="logo">🎲</span> Score Tracker</a>
+  {% if me %}
+  <nav>
+    <a href="{{ url_for('index') }}" class="{{ 'on' if ep == 'index' }}">Dashboard</a>
+    <a href="{{ url_for('sessions_page') }}" class="{{ 'on' if ep in ('sessions_page', 'view_session') }}">Sessions</a>
+    <a href="{{ url_for('leaderboard') }}" class="{{ 'on' if ep == 'leaderboard' }}">Leaderboard</a>
+    <a href="{{ url_for('tournaments') }}" class="{{ 'on' if ep in ('tournaments', 'tournament') }}">Tournaments</a>
+    <a href="{{ url_for('players') }}" class="{{ 'on' if ep in ('players', 'player') }}">Players</a>
+    <a href="{{ url_for('games') }}" class="{{ 'on' if ep in ('games', 'edit_game') }}">Games</a>
+    {% if me.role == 'admin' %}<a href="{{ url_for('admin_users') }}" class="{{ 'on' if ep == 'admin_users' }}">Users</a>{% endif %}
+  </nav>
+  <div class="topbar-right">
+    {% if me.role in ('host', 'admin') %}<a class="btn small" href="{{ url_for('new_session') }}">+ New session</a>{% endif %}
+    <a class="chip" href="{{ url_for('player', uid=me.user_id) }}">{{ me.username }} <small>{{ me.role }}</small></a>
+    <a class="link-quiet" href="{{ url_for('logout') }}">Log out</a>
+  </div>
+  {% endif %}
+  <button type="button" class="theme-toggle" id="theme-toggle" title="Switch light / dark mode" aria-label="Switch light or dark mode">🌙</button>
+</header>
+<main>
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="foot">Online Card/Board Game Score Tracker · Python Flask + MySQL</footer>
+{% raw %}
+<script>
+  (function () {
+    var root = document.documentElement, btn = document.getElementById('theme-toggle');
+    function isDark() {
+      var t = root.getAttribute('data-theme');
+      return t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    function paint() { btn.textContent = isDark() ? '☀️' : '🌙'; btn.title = isDark() ? 'Switch to light mode' : 'Switch to dark mode'; }
+    btn.addEventListener('click', function () {
+      var next = isDark() ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) {}
+      paint();
+    });
+    paint();
+  })();
+</script>
+{% endraw %}
+</body>
+</html>

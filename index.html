@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "_macros.html" import medal, bar, sessions_table %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Hi, {{ me.username }} 👋</h1>
+    <p class="muted">Here is what is happening across all games.</p>
+  </div>
+  {% if me.role in ('host', 'admin') %}<a class="btn" href="{{ url_for('new_session') }}">+ New session</a>{% endif %}
+</div>
+
+<section class="tiles">
+  <div class="tile"><span class="tile-n">{{ tiles.sessions }}</span><span class="tile-l">Sessions</span></div>
+  <div class="tile accent"><span class="tile-n">{{ tiles.ongoing }}</span><span class="tile-l">Live now</span></div>
+  <div class="tile"><span class="tile-n">{{ tiles.players }}</span><span class="tile-l">Players</span></div>
+  <div class="tile"><span class="tile-n">{{ tiles.rounds }}</span><span class="tile-l">Rounds played</span></div>
+  <div class="tile"><span class="tile-n">{{ tiles.points }}</span><span class="tile-l">Points scored</span></div>
+</section>
+
+<div class="grid-2">
+  <section class="card">
+    <h2>🔥 Live now</h2>
+    {% for s in live %}
+    <a class="row-link" href="{{ url_for('view_session', sid=s.session_id) }}">
+      <span>{{ s.icon }} <strong>{{ s.title }}</strong><br><small class="muted">{{ s.game_name }} · {{ s.players }} players · {{ s.games_played }} rounds</small></span>
+      <span class="badge ongoing">ongoing</span>
+    </a>
+    {% else %}
+    <p class="empty">No game is running right now.</p>
+    {% endfor %}
+  </section>
+
+  <section class="card">
+    <h2>🏅 Top players <small class="muted">by round wins</small></h2>
+    {% if top %}
+    <table class="compact">
+      <thead><tr><th>#</th><th>Player</th><th>Wins</th><th>Rounds</th></tr></thead>
+      <tbody>
+      {% for r in top %}
+      <tr><td>{{ medal(r.rank) }}</td>
+          <td><a href="{{ url_for('player', uid=r.user_id) }}">{{ r.username }}</a></td>
+          <td>{{ r.wins }}</td><td>{{ r.rounds_played }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p><a href="{{ url_for('leaderboard') }}">Full leaderboard →</a></p>
+    {% else %}<p class="empty">Scores will appear here.</p>{% endif %}
+  </section>
+</div>
+
+<div class="grid-2">
+  <section class="card">
+    <h2>🎯 Most played games</h2>
+    {% for g in popular %}
+    <div class="stat-line"><span>{{ g.icon }} {{ g.name }}</span><strong>{{ g.n }}</strong></div>
+    {{ bar(g.n, popular[0].n) }}
+    {% else %}<p class="empty">No sessions yet.</p>{% endfor %}
+  </section>
+  <section class="card">
+    <h2>Quick links</h2>
+    <div class="quick">
+      <a href="{{ url_for('sessions_page', status='open') }}">Open sessions to join</a>
+      <a href="{{ url_for('tournaments') }}">Tournaments</a>
+      <a href="{{ url_for('games') }}">Game catalog and timers</a>
+      <a href="{{ url_for('player', uid=me.user_id) }}">My profile and stats</a>
+    </div>
+  </section>
+</div>
+
+<section>
+  <h2>Recent sessions</h2>
+  {{ sessions_table(recent) }}
+  <p><a href="{{ url_for('sessions_page') }}">All sessions →</a></p>
+</section>
+{% endblock %}

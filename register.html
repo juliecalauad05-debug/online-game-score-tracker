@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf with context %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<form method="post" class="card auth">
+  {{ csrf() }}
+  <h1>Create an account</h1>
+  <p class="muted">The very first account becomes the admin.</p>
+  <label>Username <input name="username" required minlength="3" maxlength="30" pattern="[A-Za-z0-9_]+" autofocus>
+    <small class="muted">Letters, numbers and underscores</small></label>
+  <label>Email <input name="email" type="email" required></label>
+  <label>Password <input name="password" type="password" minlength="6" required></label>
+  <label>Confirm password <input name="confirm" type="password" minlength="6" required></label>
+  <button class="btn block">Register</button>
+  <p class="muted center">Already registered? <a href="{{ url_for('login') }}">Log in</a></p>
+</form>
+{% endblock %}

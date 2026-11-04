@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, game_fields with context %}
+{% block title %}Edit {{ game.name }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Edit {{ game.icon }} {{ game.name }}</h1></div>
+<form method="post" class="card">
+  {{ csrf() }}
+  {{ game_fields(game) }}
+  <div class="actions">
+    <button class="btn">Save changes</button>
+    <a class="btn ghost" href="{{ url_for('games') }}">Cancel</a>
+  </div>
+</form>
+<form method="post" action="{{ url_for('delete_game', game_id=game.game_id) }}" onsubmit="return confirm('Delete this game?')">
+  {{ csrf() }}
+  <button class="btn danger ghost">Delete game</button>
+  <small class="muted">Only possible while no session uses the game.</small>
+</form>
+{% endblock %}
